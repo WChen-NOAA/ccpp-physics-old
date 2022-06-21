@@ -80,6 +80,10 @@
       real(kind=kind_phys) wk1(im), wk2(im), wk3(im),prod(im,pl_coeff), &
      &                     ozib(im), colo3(im,levs+1), coloz(im,levs+1),&
      &                     ozi(im,levs)
+#ifdef MULTI_GASES
+      real, parameter:: prsmin=1.
+#endif
+
 !
       ! Initialize CCPP error handling variables
       errmsg = ''
@@ -156,6 +160,10 @@
 !       write(1000+me,*) ' colo3=',colo3(1,l),' coloz=',coloz(1,l)
 !    &,' l=',l
         do i=1,im
+#ifdef MULTI_GASES
+          if (prsl(i,l) .ge. prsmin) then
+#endif
+
           ozib(i)  = ozi(i,l)            ! no filling
           tem      = prod(i,1) - prod(i,2) * prod(i,6)
      &             + prod(i,3) * (tin(i,l) - prod(i,5))
@@ -166,6 +174,10 @@
 
 !ccpp            ozo(i,l) = (ozib(i)  + tem*dt) / (1.0 - prod(i,2)*dt)
           oz(i,l) = (ozib(i)  + tem*dt) / (1.0 - prod(i,2)*dt)
+#ifdef MULTI_GASES
+          endif
+#endif
+
         enddo
         if(idtend(1)>=1) then
            dtend(:,l,idtend(1)) = dtend(:,l,idtend(1)) + ! was ozp1
