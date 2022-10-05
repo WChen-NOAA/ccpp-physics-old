@@ -275,7 +275,7 @@
       real(kind=kind_phys), parameter ::                                &
      &     gamma = 0.2
      
-      integer, parameter :: levrwam = 90
+      integer, parameter :: levrwam = 90 
 !
 !===> ...  begin here
 !
