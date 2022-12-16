@@ -1,5 +1,5 @@
       subroutine wamphys_molec_dissipation(me, master, im, levs, grav, prsi, prsl, &       
-                 adu,adv,adt, o_n, o2_n, n2_n, dtp, cp, rho)
+                 adu,adv,adt, o_n, o2_n, n2_n, dtp, cp, rho,udt,vdt,tdt)
 !-----------------------------------------------------------------------
 ! add temp, wind changes due to viscosity and thermal conductivity
 ! Apr 06 2012  Henry Juang, initial implement for nems
@@ -32,8 +32,10 @@
       real(kind=kind_phys), intent(inout) :: adt(im,levs)       ! temperature
       real(kind=kind_phys), intent(inout) :: adu(im,levs)       ! u
       real(kind=kind_phys), intent(inout) :: adv(im,levs)       ! v
-
-      
+! Add vars wchen
+      real(kind=kind_phys), intent(inout) :: tdt(im,levs)       ! temperature
+      real(kind=kind_phys), intent(inout) :: udt(im,levs)       ! u
+      real(kind=kind_phys), intent(inout) :: vdt(im,levs)       ! v
        
 ! Local variables
       real(kind=kind_phys) :: up(im,levs,3),dudt(im,levs,3) 
@@ -64,6 +66,10 @@
           adu(i,k)=adu(i,k)+dudt(i,k,1)*dtp
           adv(i,k)=adv(i,k)+dudt(i,k,2)*dtp
           adt(i,k)=adt(i,k)+(dudt(i,k,3)+dudt3(i,k))*dtp  
+
+          udt(i,k) = dudt(i,k,1)
+          vdt(i,k) = dudt(i,k,2)
+          tdt(i,k) = dudt(i,k,3)+dudt3(i,k)
         enddo
       enddo
       

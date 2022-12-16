@@ -247,14 +247,17 @@ contains
 !! @{
      subroutine wamphys_run(do_wamipe, do_wamgfs_rad, do_wamphys_diag,         &
           me, master, im,  levs, ntrac, lonr,                                  &
-	  dtp, fhzero, kdt, jdat, nto1, nto2, nto3, ntqv,                      & 
-	  dx, xlon, xlat, xlon_d,xlat_d, sinlat, coslat, area,                 & 
-	  oro, solhr,slag,sdec,cdec, coszen, htrsw, htrlw,                     &
-	  f107, f107d, kp, kpa,                                                &
-	  nhp, nhpi, shp, shpi, swbt, swang, swvel, swbz, swden,               &	 
+          dtp, fhzero, kdt, jdat, nto1, nto2, nto3, ntqv,                      & 
+          dx, xlon, xlat, xlon_d,xlat_d, sinlat, coslat, area,                 & 
+          oro, solhr,slag,sdec,cdec, coszen, htrsw, htrlw,                     &
+          f107, f107d, kp, kpa,                                                &
+          nhp, nhpi, shp, shpi, swbt, swang, swvel, swbz, swden,               &	 
           ugrsin, vgrsin, tgrsin, qgrsin, prsi, prsl, prslk, phii, phil,       &
           dudt, dvdt, dtdt, dqdt, dudt_iwamph, dvdt_iwamph, dtdt_iwamph,       &
-	  do1dt_iwamph,  do2dt_iwamph,  dqdt_iwamph,                           &	 
+          do1dt_iwamph,  do2dt_iwamph,  dqdt_iwamph,                           &
+          dudt_wammd,dvdt_wammd,dtdt_wammd,                                    &   !Add more diag vars wchen
+          dudt_wamion,dvdt_wamion,dtdt_wamion,                                 &
+          dtdt_wamrad,                                                         &	 
           gzmt, gmmt, gjhr, gshr, go2dr, errmsg, errflg)
 	  
 !
@@ -330,7 +333,11 @@ contains
 	    
          real(kind=kind_phys), intent(out),dimension(im, levs) :: dudt_iwamph, dvdt_iwamph,   dtdt_iwamph
          real(kind=kind_phys), intent(out), dimension(im, levs) :: do1dt_iwamph, do2dt_iwamph, dqdt_iwamph
-	 
+         ! Add more diag var
+         real(kind=kind_phys), intent(out),dimension(im, levs) :: dudt_wammd, dvdt_wammd,   dtdt_wammd
+         real(kind=kind_phys), intent(out),dimension(im, levs) :: dudt_wamion, dvdt_wamion,   dtdt_wamion	 
+         real(kind=kind_phys), intent(out),dimension(im, levs) :: dtdt_wamrad	 
+
 !=========================================================
 !    
 !  Standalone diagnostics     
@@ -372,8 +379,7 @@ contains
 				
     real(kind=kind_phys), dimension(im, levs) ::   dtRAD,  dtco2c, dtco2h, dth2oh, dth2oc, dto3
     real(kind=kind_phys), dimension(im, levs) ::   cp, grav, zgeo
-    real(kind=kind_phys), dimension(im, levs) ::   dudt_ion, dvdt_ion, dtdt_ion  
-       
+    real(kind=kind_phys), dimension(im, levs) ::   dudt_ion, dvdt_ion, dtdt_ion   
        
 
        real(kind=kind_phys)  ::  rdelp(im, levs), del(im, levs)     ! rdelp(i,k) = 1./(PRSI(i,k) - PRSI(i,k+1))
@@ -412,15 +418,15 @@ contains
 !=========================================================================
    if (.not.do_wamphys_diag) return 
    
-	dudt = 0.
-	dvdt = 0.
-        dtdt = 0.
-        dqdt(:,:,:) =0.
-	
-        tgrs = tgrsin
-	ugrs = ugrsin
-	vgrs = vgrsin
-	qgrs = qgrsin
+    dudt = 0.
+    dvdt = 0.
+    dtdt = 0.
+    dqdt(:,:,:) =0.
+    
+    tgrs = tgrsin
+    ugrs = ugrsin
+    vgrs = vgrsin
+    qgrs = qgrsin
 	
     if (do_wamphys_diag) then
 !
@@ -429,10 +435,9 @@ contains
        dqdt_iwamph (:,:) =qgrs(:,:, nto3)
        dudt_iwamph(:,:) = ugrs
        dvdt_iwamph(:,:) = vgrs
-       dtdt_iwamph(:,:) = tgrs   
+       dtdt_iwamph(:,:) = tgrs
+       
     endif   
- 
-      
       call wamphys_day_of_year(jdat(1), jdat(2), jdat(3), ddd_year) 
       
 !      iday = ddd_year
@@ -485,7 +490,7 @@ contains
       call wamphys_tracer_run(me, master,im, levs,ntrac,ntrac_i,nto1, nto2, nto3,   &
                    ntqv, ddd_year, dtp, grav,prsi,prsl, tgrs, qgrs,                 &
                    o_n,o2_n, o3_n, n2_n,nair,rho,am, amu2d, cospass, zgeo, jo2_out, &
-		   f107,f107d, go2dr, plow, phigh, xpk_low, xpk_high)
+		              f107,f107d, go2dr, plow, phigh, xpk_low, xpk_high)
 		   
          if ( me == master ) then 
 !	   print *, ' Af wamphys_tracer_run ind-ces ', ntrac,ntrac_i,nto1, nto2, nto3
@@ -498,10 +503,10 @@ contains
 !		   	  
        call wam_get_cp(im, levs,  ntrac, qgrs,  cp)     
 !=========================
-
+        
       call wamphys_molec_dissipation(me, master, im, levs,grav,prsi,prsl,  &
-                   ugrs, vgrs, tgrs,o_n,o2_n,n2_n,dtp,cp, rho)	
-     	   
+                   ugrs, vgrs, tgrs,o_n,o2_n,n2_n,dtp,cp, rho,dudt_wammd,dvdt_wammd,dtdt_wammd)	 ! add more tend diag vars wchen
+     
        call wamrad_o3prof(im, levs,ntrac, nto3,  qgrs ,am, nair, o3_ng)
        
 !   
@@ -558,8 +563,9 @@ contains
 	 call wamphys_rad_merge(me, master, im ,levs, xmu, prsl, htrlw, htrsw, wtot, &
                              dtrad, dtco2c,dtco2h,dth2oh,dth2oc,dto3) 
 			     		
-         tgrs = tgrs + wtot * dtp  
-
+         tgrs = tgrs + wtot * dtp
+ ! add more tend diag vars wchen
+         dtdt_wamrad = wtot
 
        endif
 !
@@ -596,7 +602,10 @@ contains
         ugrs = ugrs +dtp*dudt_ion
 	vgrs = vgrs +dtp*dvdt_ion
 	tgrs = tgrs +dtp*dtdt_ion
-	
+ ! add more tend diag vars wchen
+  dudt_wamion = dudt_ion
+  dvdt_wamion = dvdt_ion
+  dtdt_wamion = dtdt_ion
 !	call wamphys_dadj(prsi, tgrs, im, levs, me, master)
 !	call wamphys_dadj_or(prsi, tgrs, im, levs+1, me, master)	
  345    continue 
@@ -610,13 +619,13 @@ contains
        dqdt = dqdt + (qgrs -qgrsin)*rdtp 
                            
 	if (do_wamphys_diag) then
- 
        do1dt_iwamph(:,:) = (qgrs(:,:, nto1)  -do1dt_iwamph(:,:))*rdtp
        do2dt_iwamph(:,:) = (qgrs(:,:, nto2) -do2dt_iwamph(:,:))*rdtp
        dqdt_iwamph (:,:) = (qgrs(:,:, nto3) -dqdt_iwamph(:,:))*rdtp
        dudt_iwamph(:,:) = (ugrs(:,:) - dudt_iwamph(:,:))*rdtp
        dvdt_iwamph(:,:) = (vgrs(:,:) - dvdt_iwamph(:,:))*rdtp
-       dtdt_iwamph(:,:) = (tgrs(:,:) - dtdt_iwamph(:,:))*rdtp 	
+       dtdt_iwamph(:,:) = (tgrs(:,:) - dtdt_iwamph(:,:))*rdtp
+       	
 	endif 
 	return
 	
