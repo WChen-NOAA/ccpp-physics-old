@@ -330,7 +330,8 @@
     
    do k=1,no_nz16
      zm(k) =  &
-       dl*(nom(iref+1,k)- m1*eof(iref+1,k,1)+ m2*eof(iref+1,k,2)- m3*eof(iref+1,k,3))+ &                              (1.-dl)*(nom(iref,k)- m1*eof(iref,k,1)+ m2*eof(iref,k,2)- m3*eof(iref,k,3))
+       dl*(nom(iref+1,k)- m1*eof(iref+1,k,1)+ m2*eof(iref+1,k,2)- m3*eof(iref+1,k,3))+ &                              
+(1.-dl)*(nom(iref,k)- m1*eof(iref,k,1)+ m2*eof(iref,k,2)- m3*eof(iref,k,3))
        
      if (zm(k).le. 0.0) zm(k)=con_nzero
     enddo
